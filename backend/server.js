@@ -1,18 +1,22 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const { HfInference } = require('@huggingface/inference');
+
 require('dotenv').config();
+const OpenAI = require('openai')
 
 const app = express();
 const port = process.env.PORT || 5000;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+}
+);
 
 app.use(cors());
 app.use(express.json());
 
 const GITHUB_API_URL = 'https://api.github.com';
 
-const hf = new HfInference(process.env.HUGGINGFACE_TOKEN);
 
 async function fetchFileContent(url) {
     const response = await axios.get(url, {
@@ -23,7 +27,7 @@ async function fetchFileContent(url) {
     });
     return response.data;
   }
-
+  
 async function fetchRepoContents(owner, repo, path = '') {
     const response = await axios.get(`${GITHUB_API_URL}/repos/${owner}/${repo}/contents/${path}`, {
       headers: {
@@ -68,40 +72,49 @@ async function fetchRepoContents(owner, repo, path = '') {
     }).join('\n');
   
     const prompt = `Based on the following GitHub repository structure and file contents, write a blog post about the project, focus on 
-    being reflective about learning and the project. :\n\n${fileContents}\n\nBlog post:`;
+    being reflective about learning and the project. Keep it less than 250 words for now`;
   
     try {
-      const response = await hf.textGeneration({
-        model: 'gpt2',
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 250,
-          temperature: 0.7,
-        },
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: "system", content: prompt },
+          {
+              role: "user",
+              content: fileContents,
+          },
+      ],
+
       });
   
-      return response.generated_text;
+      return response.choices[0].message.content;
     } catch (error) {
       console.error('Error generating blog post:', error);
       throw new Error('Failed to generate blog post');
     }
   }
 
-  app.get('/test-huggingface', async (req, res) => {
+  app.get('/test-gpt', async (req, res) => {
+    console.log('Route /test-gpt hit');
     try {
-      const response = await hf.textGeneration({
-        model: 'gpt2',
-        inputs: 'Hello, my name is',
-        parameters: {
-          max_new_tokens: 50,
-          temperature: 0.7,
-        },
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+                  { role: "system", content: "complete the imput upto 10 words" },
+                  {
+                      role: "user",
+                      content: "hey my name is.....",
+                  },
+              ]
+        
       });
+      
   
-      res.json({ generatedText: response.generated_text });
+      res.json({ generatedText: response.choices[0].message.content });
+      
     } catch (error) {
-      console.error('Error testing Hugging Face:', error);
-      res.status(500).json({ error: 'Failed to connect to Hugging Face API' });
+      console.error('Error testing gpt:', error);
+      res.status(500).json({ error: 'Failed to connect to openAI API' });
     }
   });
   
@@ -113,7 +126,8 @@ async function fetchRepoContents(owner, repo, path = '') {
       const [, owner, repo] = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
       const files = await fetchRepoContents(owner, repo);
       const blogPost = await generateBlogPost(files);
-      res.json({ files });
+      res.json({ blogPost, files });
+      console.log(blogPost)
     } catch (error) {
       console.error('Error analyzing repo:', error.message);
       res.status(500).json({ error: 'Failed to analyze repo' });
