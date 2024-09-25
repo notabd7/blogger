@@ -62,61 +62,61 @@ async function fetchRepoContents(owner, repo, path = '') {
   }
 
 
-  async function generateBlogPost(files) {
-    let fileContents = files.map(file => {
-      if (file.type === 'file') {
-        return `File: ${file.path}\n\nContent:\n${file.content}\n\n`;
-      } else {
-        return `Directory: ${file.path}\n`;
-      }
-    }).join('\n');
+  // async function generateBlogPost(files) {
+  //   let fileContents = files.map(file => {
+  //     if (file.type === 'file') {
+  //       return `File: ${file.path}\n\nContent:\n${file.content}\n\n`;
+  //     } else {
+  //       return `Directory: ${file.path}\n`;
+  //     }
+  //   }).join('\n');
   
-    const prompt = `Based on the following GitHub repository structure and file contents, write a blog post about the project, focus on 
-    being reflective about learning and the project. Keep it less than 250 words for now`;
+  //   const prompt = `Based on the following GitHub repository structure and file contents, write a blog post about the project, focus on 
+  //   being reflective about learning and the project. Keep it less than 250 words for now`;
   
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: "system", content: prompt },
-          {
-              role: "user",
-              content: fileContents,
-          },
-      ],
+  //   try {
+  //     const response = await openai.chat.completions.create({
+  //       model: 'gpt-4o-mini',
+  //       messages: [
+  //         { role: "system", content: prompt },
+  //         {
+  //             role: "user",
+  //             content: fileContents,
+  //         },
+  //     ],
 
-      });
+  //     });
   
-      return response.choices[0].message.content;
-    } catch (error) {
-      console.error('Error generating blog post:', error);
-      throw new Error('Failed to generate blog post');
-    }
-  }
+  //     return response.choices[0].message.content;
+  //   } catch (error) {
+  //     console.error('Error generating blog post:', error);
+  //     throw new Error('Failed to generate blog post');
+  //   }
+  // }
 
-  app.get('/test-gpt', async (req, res) => {
-    console.log('Route /test-gpt hit');
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-                  { role: "system", content: "complete the imput upto 10 words" },
-                  {
-                      role: "user",
-                      content: "hey my name is.....",
-                  },
-              ]
+  // app.get('/test-gpt', async (req, res) => {
+  //   console.log('Route /test-gpt hit');
+  //   try {
+  //     const response = await openai.chat.completions.create({
+  //       model: 'gpt-4o-mini',
+  //       messages: [
+  //                 { role: "system", content: "complete the imput upto 10 words" },
+  //                 {
+  //                     role: "user",
+  //                     content: "hey my name is.....",
+  //                 },
+  //             ]
         
-      });
+  //     });
       
   
-      res.json({ generatedText: response.choices[0].message.content });
+  //     res.json({ generatedText: response.choices[0].message.content });
       
-    } catch (error) {
-      console.error('Error testing gpt:', error);
-      res.status(500).json({ error: 'Failed to connect to openAI API' });
-    }
-  });
+  //   } catch (error) {
+  //     console.error('Error testing gpt:', error);
+  //     res.status(500).json({ error: 'Failed to connect to openAI API' });
+  //   }
+  // });
   
 
   app.post('/analyze-repo', async (req, res) => {
@@ -125,9 +125,9 @@ async function fetchRepoContents(owner, repo, path = '') {
     try {
       const [, owner, repo] = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
       const files = await fetchRepoContents(owner, repo);
-      const blogPost = await generateBlogPost(files);
-      res.json({ blogPost, files });
-      console.log(blogPost)
+      //const blogPost = await generateBlogPost(files);
+      res.json({ files });
+      //console.log(blogPost)
     } catch (error) {
       console.error('Error analyzing repo:', error.message);
       res.status(500).json({ error: 'Failed to analyze repo' });
